@@ -1,0 +1,67 @@
+armeni2022:
+  bids_root: "/data/engs-pnpl/datasets/armeni2022"
+  resample_freq: 250
+  l_freq: 0.1
+  h_freq: 125
+  notch_freq: 50
+  recordings:
+    train:
+      - subject: 001
+        sessions: 
+          - 001
+          - 002
+          - 003
+          - 004
+          - 005
+          - 006
+          - 007
+          - 008
+        task: compr
+      - subject: 002
+        sessions: 
+          - 001
+          - 002
+          - 003
+          - 004
+          - 005
+          - 006
+          - 007
+          - 008
+        task: compr
+      - subject: 003
+        sessions: 
+          - 001
+          - 002
+          - 003
+          - 004
+          - 005
+          - 006
+          - 007
+          - 008
+        task: compr
+    val:
+      - subject: 001
+        sessions: 
+          - 009
+        task: compr
+      - subject: 002
+        sessions: 
+          - 009
+        task: compr
+      - subject: 003
+        sessions: 
+          - 009
+        task: compr
+    test:
+      - subject: 001
+        sessions: 
+          - 010
+        task: compr
+      - subject: 002
+        sessions: 
+          - 010
+        task: compr
+      - subject: 003
+        sessions: 
+          - 010
+        task: compr
