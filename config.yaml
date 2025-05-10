@@ -1,0 +1,3 @@
+learning_rate: 0.000066
+batch_size: 512
+num_workers: 16
