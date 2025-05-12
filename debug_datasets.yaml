@@ -1,22 +1,23 @@
 armeni2022:
   bids_root: "/data/engs-pnpl/datasets/armeni2022"
+  preproc_root: "/data/engs-pnpl/datasets/armeni2022/derivatives/bbl_preproc"
   resample_freq: 250
   l_freq: 0.1
   h_freq: 125
   notch_freq: 50
   recordings:
     train:
-      - subject: 001
+      - subject: "001"
         sessions: 
-          - 001
+          - "001"
         task: compr
     val:
-      - subject: 001
+      - subject: "001"
         sessions: 
-          - 009
+          - "009"
         task: compr
     test:
-      - subject: 001
+      - subject: "001"
         sessions: 
-          - 010
+          - "010"
         task: compr

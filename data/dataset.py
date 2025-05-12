@@ -41,7 +41,7 @@ class PaddingCollator:
         # Right-pad sensor dimension to the length pad_features.
         padded_meg = torch.stack([
             torch.nn.functional.pad(
-                sample, pad=(0, 0, 0, self.max_pad - sample.shape[0])
+                torch.tensor(sample), pad=(0, 0, 0, self.max_pad - sample.shape[0])
             ) for sample in meg
         ])
 
@@ -123,10 +123,10 @@ class SpeechDataset(MEGDataset):
         return {
             "meg": meg,
             "dataset_id": self.dataset_id,
-            "subject_id": subject_id + self.subject_id_increment,
+            "subject_id": subject_id + self.dataset_id * 1024,
             "sensor_xyz": sensor_xyz,
             "onset": onset,
-            "speech": label,
+            "label": label,
             "sfreq": sfreq,
         }
 
@@ -152,7 +152,7 @@ class PretrainingDataset(MEGDataset):
         self.samples = []
         
         preprocessed_recording_paths = sorted(glob.glob(self.config["preproc_root"] + f"/{split}/*.h5"))
-        self.preprocessed_recordings = [h5py.File(path, "r") for path in preprocessed_recording_paths]
+        self.preprocessed_recordings = [h5py.File(path, "r")["data"] for path in preprocessed_recording_paths]
 
         for preprocessed_recording in self.preprocessed_recordings:
 
@@ -191,7 +191,7 @@ class PretrainingDataset(MEGDataset):
         return {
             "meg": meg,
             "dataset_id": self.dataset_id,
-            "subject_id": subject_id + self.subject_id_increment,
+            "subject_id": subject_id + self.dataset_id * 1024,
             "sensor_xyz": sensor_xyz,
             "onset": onset,
             "sfreq": sfreq,

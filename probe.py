@@ -1,13 +1,14 @@
-# Pretrain a model
+# Given a pre-trained model, probe the model to predict speech or voicing.
 
 import argparse
 import lightning as L
 import yaml
 import torch
 
-from data.dataset import PretrainingDataset, PaddingCollator
+from data.dataset import SpeechDataset, PaddingCollator
+from models.prober import Prober
 from models.pretrainer import Pretrainer
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import WandbLogger
 
 torch.set_float32_matmul_precision('high')
@@ -33,9 +34,9 @@ argparser.add_argument(
 argparser.add_argument(
     "--datasets",
     type=str,
-    default=["camcan"],
+    default=["armeni2022"],
     nargs="+",
-    help="List of datasets to use for training (camcan, mous, armeni2022, gwilliams2022)",
+    help="List of datasets to use for training (armeni2022, gwilliams2022)",
 )
 
 argparser.add_argument(
@@ -48,8 +49,22 @@ argparser.add_argument(
 argparser.add_argument(
     "--name",
     type=str,
-    default="pretraining",
+    default="probing",
     help="Name of the experiment",
+)
+
+argparser.add_argument(
+    "--task",
+    type=str,
+    default="speech",
+    help="Probing task (speech, voicing)",
+)
+
+argparser.add_argument(
+    "--pretrained_ckpt",
+    type=str,
+    help="Path to the pretrained model checkpoint",
+    required=True,
 )
 
 argparser.add_argument(
@@ -71,7 +86,24 @@ with open(args.training_config, "r") as f:
 with open(args.datasets_config, "r") as f:
     datasets_config = yaml.safe_load(f)
 
+# Load pre-trained backbone
+pretrainer = Pretrainer.load_from_checkpoint(
+    args.pretrained_ckpt,
+    strict=False,
+)
+backbone = pretrainer.backbone
+n_pretrained_datasets = len(pretrainer.datasets)
+
+print(f"Found backbone trained with {n_pretrained_datasets} datasets ({pretrainer.datasets}).")
+print("Incrementing dataset ids by this much in probing.")
+
 # Load datasets
+
+if args.task == "speech":
+    dataset_cls = SpeechDataset
+elif args.task == "voicing":
+    raise NotImplementedError("Voicing task not implemented yet.")
+
 train_sets, val_sets, test_sets = [], [], []
 for i, dataset_name in enumerate(args.datasets):
     if dataset_name not in datasets_config:
@@ -79,25 +111,25 @@ for i, dataset_name in enumerate(args.datasets):
     
     # TODO: Handle subject id increment
     
-    train_sets.append(PretrainingDataset(
+    train_sets.append(dataset_cls(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
         split="train",
-        dataset_id=i,
+        dataset_id=i + n_pretrained_datasets,
     ))
 
-    val_sets.append(PretrainingDataset(
+    val_sets.append(dataset_cls(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
         split="val",
-        dataset_id=i,
+        dataset_id=i + n_pretrained_datasets,
     ))
 
-    test_sets.append(PretrainingDataset(
+    test_sets.append(dataset_cls(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
         split="test",
-        dataset_id=i,
+        dataset_id=i + n_pretrained_datasets,
     ))
 
 train_sets = torch.utils.data.ConcatDataset(train_sets)
@@ -136,14 +168,12 @@ test_loader = torch.utils.data.DataLoader(
 )
 
 # Define the model
-pretrainer = Pretrainer(
+prober = Prober(
     input_dim=MAX_PAD,
-    tasks=training_config["tasks"],
+    backbone=backbone,
     model_dim=training_config["model_dim"],
     subject_embedding_dim=training_config["subject_embedding_dim"],
-    projector_dim=training_config["projector_dim"],
-    learning_rate=training_config["learning_rate"],
-    datasets = args.datasets,
+    learning_rate=training_config["probe_learning_rate"],
 )
 
 checkpoint = ModelCheckpoint(
@@ -151,6 +181,12 @@ checkpoint = ModelCheckpoint(
     dirpath="checkpoints",
     filename=args.name + "-best-{epoch:02d}-{val_loss:.2f}",
     save_top_k=1,
+    mode="min",
+)
+
+early_stopping = EarlyStopping(
+    monitor="val_auroc",
+    patience=10,
     mode="min",
 )
 
@@ -180,11 +216,11 @@ trainer = L.Trainer(
 )
 
 trainer.fit(
-    pretrainer,
+    prober,
     train_loader,
     val_loader,
 )
-pretrainer = pretrainer.load_from_checkpoint(
+prober = prober.load_from_checkpoint(
     checkpoint.best_model_path,
 )
-trainer.test(pretrainer, test_loader)
+trainer.test(prober, test_loader)

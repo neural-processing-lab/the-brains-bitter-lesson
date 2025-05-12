@@ -7,9 +7,12 @@ from .seanet.seanet import SEANetBrainEncoder
 
 class Backbone(torch.nn.Module):
     def __init__(self, input_dim, model_dim, subject_embedding_dim):
+        super(Backbone, self).__init__()
 
         self.subject_embedding = torch.nn.Embedding(
-            num_embeddings=128, # Allows for up to this many subjects. NOTE: if averaging, only use trained embeddings
+            # Allow for 1024 subjects per dataset and up to 10 datasets
+            num_embeddings=1024 * 10,
+            # NOTE: if averaging, only use trained embeddings
             embedding_dim=subject_embedding_dim,
         )
 
@@ -22,6 +25,7 @@ class Backbone(torch.nn.Module):
 
         self.encoder = SEANetBrainEncoder(
             channels=model_dim,
+            dimension=model_dim,
         )
 
         self.trained_subjects = set()
@@ -32,17 +36,20 @@ class Backbone(torch.nn.Module):
 
         x = self.dataset_gating(x, dataset_id=dataset_id)
         x = self.encoder(x) # [B, E, T]
+        x = torch.mean(x, dim=-1) # [B, E]
 
         if not use_mean_subject_embedding:
-            z_subject = self.subject_embedding(subject_id).unsqueeze(-1) # [B, S, 1]
-            x = torch.cat([x, z_subject], dim=1) # [B, E + S, T]
+            z_subject = self.subject_embedding(subject_id) # [B, S]
+            x = torch.cat([x, z_subject], dim=1) # [B, E + S]
             self.trained_subjects = self.trained_subjects.union(
                 set(subject_id.squeeze().tolist())
             )
         else:
-            # Use mean subject embedding for all trained subjects
-            z_subject = self.subject_embedding.weight[:max(self.trained_subjects) + 1].mean(dim=0).unsqueeze(0).unsqueeze(-1) # [1, S, 1]
-            x = torch.cat([x, z_subject], dim=1)
+            # Gather subject embeddings for all subjects in trained_subjects
+            indices_tensor = torch.tensor(list(self.trained_subjects), dtype=torch.long, device=x.device)
+            trained_embedddings = self.subject_embedding(indices_tensor) # [N, S]
+            average_embedding = trained_embedddings.mean(dim=0).unsqueeze(0) # [1, S]
+            x = torch.cat([x, average_embedding], dim=1) # [B, E + S]
 
         return x
 

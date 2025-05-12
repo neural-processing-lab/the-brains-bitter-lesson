@@ -1,4 +1,5 @@
 # Preprocesses data for Armeni, Gwilliams, Schoffelen, and CamCAN
+import glob
 import mne
 import mne_bids
 import numpy as np
@@ -6,6 +7,24 @@ import os
 import h5py
 
 from sklearn import preprocessing
+
+def preprocess_meg(raw, resample_freq, l_freq, h_freq, notch_freq):
+    # Band-pass filter the data to remove low and high frequency noise
+    raw.load_data()
+    raw.filter(l_freq=l_freq, h_freq=h_freq, picks="all", n_jobs=-1, verbose=False)
+
+    if h_freq > notch_freq:
+        # Filter electric grid frequency and any harmonics if present in the signal
+        raw.notch_filter(
+            freqs=list(range(notch_freq, h_freq + 1, notch_freq)), verbose=False
+        )
+
+    # Decimate the signal by resampling (after cleaning up the signal already)
+    raw.resample(sfreq=resample_freq, verbose=False)
+
+    print("Preprocessed MEG. New sample rate", raw.info["sfreq"])
+
+    return raw
 
 
 def preprocess_data(dataset_name, config):
@@ -22,18 +41,14 @@ def preprocess_data(dataset_name, config):
         None
     """
     # Check if the dataset is supported
-    if dataset_name not in ['Armeni', 'Gwilliams', 'Schoffelen', 'CamCAN']:
+    if dataset_name not in ['armeni2022', 'gwilliams2022', 'mous', 'camcan']:
         raise ValueError(f"Dataset {dataset_name} is not supported.")
 
     # Perform preprocessing based on the dataset
-    if dataset_name == 'Armeni':
-        preprocess_armeni(dataset_config)
-    elif dataset_name == 'Gwilliams':
-        preprocess_gwilliams(dataset_config)
-    elif dataset_name == 'Schoffelen':
-        preprocess_schoffelen(dataset_config)
-    elif dataset_name == 'CamCAN':
-        preprocess_camcan(dataset_config)
+    if dataset_name == 'armeni2022':
+        preprocess_armeni(config)
+    elif dataset_name == 'camcan':
+        preprocess_camcan(config)
 
 
 def preprocess_armeni(config):
@@ -59,7 +74,7 @@ def preprocess_armeni(config):
         for recording in recordings:
 
             subject = recording["subject"]
-            sessions = recording["session"]
+            sessions = recording["sessions"]
             task = recording["task"]
 
             for session in sessions:
@@ -76,7 +91,7 @@ def preprocess_armeni(config):
 
                     bids_path = mne_bids.BIDSPath(
                         subject=recording["subject"],
-                        session=recording["session"],
+                        session=session,
                         task=recording["task"],
                         root=bids_root,
                     )
@@ -129,7 +144,7 @@ def preprocess_armeni(config):
                     info["channel_means"] = np.mean(data, axis=1)
                     info["channel_stds"] = np.std(data, axis=1)
 
-                    os.makedirs(preproc_path, exist_ok=True)
+                    os.makedirs(f"{preproc_root}/{split}", exist_ok=True)
                     with h5py.File(preproc_path, "w") as f:
                         ds = f.create_dataset("data", data=data, dtype=np.float32, chunks=(data.shape[0], 40))
                         for key, value in info.items():
@@ -140,20 +155,105 @@ def preprocess_armeni(config):
                     print("Finished preprocessing.")
 
 
-def preprocess_meg(raw, resample_freq, l_freq, h_freq, notch_freq):
-    # Band-pass filter the data to remove low and high frequency noise
-    raw.load_data()
-    raw.filter(l_freq=l_freq, h_freq=h_freq, picks="all", n_jobs=-1, verbose=False)
+def preprocess_camcan(config):
+    """
+    Preprocesses the CamCAN dataset.
 
-    if h_freq > notch_freq:
-        # Filter electric grid frequency and any harmonics if present in the signal
-        raw.notch_filter(
-            freqs=list(range(notch_freq, h_freq + 1, notch_freq)), verbose=False
-        )
+    Args:
+        bids_root (str): The root directory of the BIDS dataset.
+        preproc_root (str): The root directory for preprocessed data.
+        config (dict): Configuration for preprocessing.
 
-    # Decimate the signal by resampling (after cleaning up the signal already)
-    raw.resample(sfreq=resample_freq, verbose=False)
+    Returns:
+        None
+    """
 
-    print("Preprocessed MEG. New sample rate", raw.info["sfreq"])
+    preproc_root = config["preproc_root"]
+    bids_root = config["bids_root"]
 
-    return raw
+    subject_no = 0
+    subject_hashmap = {}
+
+    for task in ["rest", "smt"]:
+
+        # Find all subjects
+        subjects = [
+            os.path.basename(subject).replace("sub-", "") for subject in sorted(glob.glob(bids_root + f"/{task}/sub-*"))
+        ]
+
+        # Generate splits
+        n_train = int(len(subjects) * 0.9)
+        n_val = int(len(subjects) * 0.05)
+        train_subjects = subjects[:n_train]
+        val_subjects = subjects[n_train : n_train + n_val]
+        test_subjects = subjects[n_train + n_val :]
+
+        for split, subjects in zip(["train", "val", "test"], [train_subjects, val_subjects, test_subjects]):
+
+            for subject in subjects:
+
+                if not subject in subject_hashmap:
+                    subject_hashmap[subject] = subject_no
+                    subject_no += 1
+
+                raw_path = bids_root + f"/{task}/sub-{subject}/ses-{task}/meg/sub-{subject}_ses-{task}_task-{task}_meg.fif"
+                preproc_path = f"{preproc_root}/{split}/sub-{subject}_ses-{task}_task-{task}_preproc.h5"
+
+                if not os.path.exists(preproc_path):
+
+                    print("Preprocessed data not found.")
+                    print(
+                        f"Preprocessing subject {subject} session {task} task {task}"
+                    )
+
+                    raw = mne.io.read_raw_fif(raw_path, verbose=False)
+
+                    channel_names = raw.info['ch_names']
+                    filtered_names = filtered_names = [name for name in channel_names if name.startswith('MEG')]
+                    raw = raw.pick(filtered_names)
+
+                    raw = preprocess_meg(
+                        raw,
+                        resample_freq=config["resample_freq"],
+                        l_freq=config["l_freq"],
+                        h_freq=config["h_freq"],
+                        notch_freq=config["notch_freq"],
+                    )
+                    data = raw.get_data()
+
+                    sensor_positions = []
+                    for ch in raw.info["chs"]:
+                        pos = ch["loc"][:3]
+                        sensor_positions.append(pos.tolist())
+                    
+                    print("[+] Fitting robust scaler...")
+                    robust_scaler = preprocessing.RobustScaler()
+                    robust_scaler = robust_scaler.fit(data.transpose(1, 0)) # [S, T] -> [T, S]
+                    print("[+] Scaler fitted.")
+                    
+                    info = {
+                            "subject": subject,
+                            "session": task,
+                            "subject_idx": subject_hashmap[subject],
+                            "task": task,
+                            "run": None,
+                            "dataset": "armeni2022",
+                            "sfreq": config["resample_freq"],
+                            "sensor_xyz": sensor_positions,
+                            "robust_scaler_center": robust_scaler.center_,
+                            "robust_scaler_scale": robust_scaler.scale_,
+                            "n_samples": data.shape[-1],
+                        }
+
+                    info["channel_means"] = np.mean(data, axis=1)
+                    info["channel_stds"] = np.std(data, axis=1)
+
+                    os.makedirs(f"{preproc_root}/{split}", exist_ok=True)
+                    with h5py.File(preproc_path, "w") as f:
+                        ds = f.create_dataset("data", data=data, dtype=np.float32, chunks=(data.shape[0], 40))
+                        for key, value in info.items():
+                            if value is None:
+                                continue
+                            ds.attrs[key] = value
+                    
+                    print("Finished preprocessing.")
