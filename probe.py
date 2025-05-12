@@ -107,9 +107,7 @@ train_sets, val_sets, test_sets = [], [], []
 for i, dataset_name in enumerate(args.datasets):
     if dataset_name not in datasets_config:
         raise ValueError(f"Dataset {dataset_name} not found in config file.")
-    
-    # TODO: Handle subject id increment
-    
+        
     train_sets.append(dataset_cls(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
@@ -168,7 +166,6 @@ test_loader = torch.utils.data.DataLoader(
 
 # Define the model
 prober = Prober(
-    input_dim=constants.MAX_PAD,
     backbone=backbone,
     model_dim=training_config["model_dim"],
     subject_embedding_dim=training_config["subject_embedding_dim"],

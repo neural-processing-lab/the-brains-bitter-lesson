@@ -75,7 +75,7 @@ class SpeechDataset(MEGDataset):
         self.samples = []
         
         preprocessed_recording_paths = sorted(glob.glob(self.config["preproc_root"] + f"/{split}/*.h5"))
-        self.preprocessed_recordings = [h5py.File(path, "r") for path in preprocessed_recording_paths]
+        self.preprocessed_recordings = [h5py.File(path, "r")["data"] for path in preprocessed_recording_paths]
 
         for preprocessed_recording in self.preprocessed_recordings:
 
@@ -83,7 +83,6 @@ class SpeechDataset(MEGDataset):
             subject = info["subject"]
             session = info["session"]
             task = info["task"]
-            run = info["run"]
             sfreq = info["sfreq"]
 
             speech_events = GET_SPEECH_EVENTS_FN[dataset_name](

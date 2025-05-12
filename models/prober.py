@@ -7,7 +7,6 @@ from torchmetrics import Accuracy, AUROC
 class Prober(L.LightningModule):
     def __init__(self, backbone, model_dim, subject_embedding_dim, learning_rate, use_mean_subject_embedding=False):
         super().__init__()
-        self.save_hyperparameters()
         self.learning_rate = learning_rate
         self.use_mean_subject_embedding = use_mean_subject_embedding
 
@@ -46,7 +45,7 @@ class Prober(L.LightningModule):
             use_mean_subject_embedding=self.use_mean_subject_embedding,
         )
 
-        logits = self.classifier(z)
+        logits = self.classifier(z).squeeze(-1)
         probs = torch.sigmoid(logits)
 
         loss = torch.nn.functional.binary_cross_entropy_with_logits(

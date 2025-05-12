@@ -43,6 +43,9 @@ def preprocess_data(dataset_name, config):
     # Check if the dataset is supported
     if dataset_name not in ['armeni2022', 'gwilliams2022', 'mous', 'camcan']:
         raise ValueError(f"Dataset {dataset_name} is not supported.")
+    
+    if "debug" in config["preproc_root"]:
+        return
 
     # Perform preprocessing based on the dataset
     if dataset_name == 'armeni2022':

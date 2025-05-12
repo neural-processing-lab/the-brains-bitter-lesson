@@ -21,3 +21,10 @@ armeni2022:
         sessions: 
           - "010"
         task: compr
+camcan:
+  bids_root: "/data/engs-pnpl/datasets/shafto2014/cc700/meg/pipeline/release005/BIDSsep"
+  preproc_root: "/data/engs-pnpl/datasets/shafto2014/derivatives/bbl_preproc_debug"
+  resample_freq: 250
+  l_freq: 0.1
+  h_freq: 125
+  notch_freq: 50

@@ -59,7 +59,7 @@ def get_armeni_speech_events(bids_root, subject, session, task, sample_freq, dur
                 "label": 0,
             })
     
-    return samples
+    return samples[:-1]  # Remove the last sample as it is usually not a complete frame
 
 def get_gwilliams_speech_events(bids_root, subject, session, task, sample_freq, duration, recording_samples):
     events_df = get_gwilliams_events(bids_root, subject, session, task)

@@ -75,9 +75,7 @@ train_sets, val_sets, test_sets = [], [], []
 for i, dataset_name in enumerate(args.datasets):
     if dataset_name not in datasets_config:
         raise ValueError(f"Dataset {dataset_name} not found in config file.")
-    
-    # TODO: Handle subject id increment
-    
+        
     train_sets.append(PretrainingDataset(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
