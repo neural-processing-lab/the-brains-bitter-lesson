@@ -2,6 +2,8 @@ import glob
 import h5py
 import torch
 
+import constants
+
 from torch.utils.data.dataloader import default_collate
 from abc import abstractmethod
 from .preprocess import preprocess_data
@@ -123,7 +125,7 @@ class SpeechDataset(MEGDataset):
         return {
             "meg": meg,
             "dataset_id": self.dataset_id,
-            "subject_id": subject_id + self.dataset_id * 1024,
+            "subject_id": subject_id + self.dataset_id * constants.MAX_SUBJECTS_PER_DATASET,
             "sensor_xyz": sensor_xyz,
             "onset": onset,
             "label": label,
@@ -191,7 +193,7 @@ class PretrainingDataset(MEGDataset):
         return {
             "meg": meg,
             "dataset_id": self.dataset_id,
-            "subject_id": subject_id + self.dataset_id * 1024,
+            "subject_id": subject_id + self.dataset_id * constants.MAX_SUBJECTS_PER_DATASET,
             "sensor_xyz": sensor_xyz,
             "onset": onset,
             "sfreq": sfreq,

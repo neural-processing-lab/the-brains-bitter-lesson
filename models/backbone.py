@@ -2,6 +2,8 @@
 
 import torch
 
+import constants
+
 from .multisensor_projector import MultisensorProjector
 from .seanet.seanet import SEANetBrainEncoder
 
@@ -10,8 +12,8 @@ class Backbone(torch.nn.Module):
         super(Backbone, self).__init__()
 
         self.subject_embedding = torch.nn.Embedding(
-            # Allow for 1024 subjects per dataset and up to 10 datasets
-            num_embeddings=1024 * 10,
+            # Allow for so many subjects per dataset and up to 10 datasets
+            num_embeddings=constants.MAX_SUBJECTS_PER_DATASET * constants.MAX_DATASETS,
             # NOTE: if averaging, only use trained embeddings
             embedding_dim=subject_embedding_dim,
         )
@@ -20,7 +22,7 @@ class Backbone(torch.nn.Module):
         self.dataset_gating = MultisensorProjector(
             sensor_dim=input_dim,
             model_dim=model_dim,
-            num_datasets=4, # NOTE: set this to max number of datasets
+            num_datasets=constants.MAX_DATASETS, # NOTE: set this to max number of datasets
         )
 
         self.encoder = SEANetBrainEncoder(

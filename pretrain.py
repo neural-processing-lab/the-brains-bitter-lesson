@@ -5,15 +5,14 @@ import lightning as L
 import yaml
 import torch
 
+import constants
+
 from data.dataset import PretrainingDataset, PaddingCollator
 from models.pretrainer import Pretrainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 torch.set_float32_matmul_precision('high')
-
-# Must be larger than the largest sensor dim. in the data
-MAX_PAD = 306
 
 argparser = argparse.ArgumentParser(description="Pretrain a model")
 argparser.add_argument(
@@ -105,7 +104,7 @@ val_sets = torch.utils.data.ConcatDataset(val_sets)
 test_sets = torch.utils.data.ConcatDataset(test_sets)
 
 collator = PaddingCollator(
-    max_pad=MAX_PAD,
+    max_pad=constants.MAX_PAD,
 )
 
 train_loader = torch.utils.data.DataLoader(
@@ -137,7 +136,7 @@ test_loader = torch.utils.data.DataLoader(
 
 # Define the model
 pretrainer = Pretrainer(
-    input_dim=MAX_PAD,
+    input_dim=constants.MAX_PAD,
     tasks=training_config["tasks"],
     model_dim=training_config["model_dim"],
     subject_embedding_dim=training_config["subject_embedding_dim"],
