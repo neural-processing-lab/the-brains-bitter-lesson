@@ -66,6 +66,24 @@ armeni2022:
         sessions: 
           - "010"
         task: compr
+gwilliams2022:
+  bids_root: "/data/engs-pnpl/datasets/gwilliams2022"
+  preproc_root: "/data/engs-pnpl/datasets/gwilliams2022/derivatives/bbl_preproc"
+  resample_freq: 250
+  l_freq: 0.1
+  h_freq: 125
+  notch_freq: 50
+  recordings:
+    train:
+      tasks:
+        - "2"
+        - "3"
+    val:
+      tasks:
+        - "0"
+    test:
+      tasks:
+        - "1"
 camcan:
   bids_root: "/data/engs-pnpl/datasets/shafto2014/cc700/meg/pipeline/release005/BIDSsep"
   preproc_root: "/data/engs-pnpl/datasets/shafto2014/derivatives/bbl_preproc"

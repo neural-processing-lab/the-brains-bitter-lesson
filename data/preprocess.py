@@ -52,6 +52,8 @@ def preprocess_data(dataset_name, config):
     # Perform preprocessing based on the dataset
     if dataset_name == 'armeni2022':
         preprocess_armeni(config)
+    elif dataset_name == 'gwilliams2022':
+        preprocess_gwilliams(config)
     elif dataset_name == "mous":
         preprocess_mous(config)
     elif dataset_name == 'camcan':
@@ -160,6 +162,110 @@ def preprocess_armeni(config):
                             ds.attrs[key] = value
                     
                     print("Finished preprocessing.")
+
+
+def preprocess_gwilliams(config):
+    """
+    Preprocesses the Gwilliams dataset.
+
+    Args:
+        bids_root (str): The root directory of the BIDS dataset.
+        preproc_root (str): The root directory for preprocessed data.
+        config (dict): Configuration for preprocessing.
+
+    Returns:
+        None
+    """
+
+    preproc_root = config["preproc_root"]
+    bids_root = config["bids_root"]
+
+    # Find all subjects
+    subjects = [
+        os.path.basename(subject).replace("sub-", "") for subject in sorted(glob.glob(bids_root + f"/sub-*"))
+    ]
+
+    for split in ["train", "val", "test"]:
+
+        tasks = config["recordings"][split]["tasks"]
+
+        for task in tasks:
+
+            for subject in subjects:
+
+                # Some subjects have only one session
+                sessions = ["0"] if subject in ["03", "12", "16", "20", "21"] else ["0", "1"]
+
+                for session in sessions:
+
+                    # Check if recording is already preprocessed
+                    preproc_path = f"{preproc_root}/{split}/sub-{subject}_ses-{session}_task-{task}_preproc.h5"
+
+                    if not os.path.exists(preproc_path):
+
+                        print("Preprocessed data not found.")
+                        print(
+                            f"Preprocessing subject {subject} session {session} task {task}"
+                        )
+
+                        bids_path = mne_bids.BIDSPath(
+                            subject=subject,
+                            session=session,
+                            task=task,
+                            root=bids_root,
+                        )
+
+                        raw = mne_bids.read_raw_bids(bids_path, verbose=False)
+
+                        meg_picks = mne.pick_types(raw.info, meg=True, ref_meg=False)
+                        raw = raw.pick(meg_picks, verbose=False)
+
+                        raw = preprocess_meg(
+                            raw,
+                            resample_freq=config["resample_freq"],
+                            l_freq=config["l_freq"],
+                            h_freq=config["h_freq"],
+                            notch_freq=config["notch_freq"],
+                        )
+                        data = raw.get_data()
+
+                        sensor_positions = []
+                        for ch in raw.info["chs"]:
+                            pos = ch["loc"][:3]
+                            sensor_positions.append(pos.tolist())
+
+
+                        print("[+] Fitting robust scaler...")
+                        robust_scaler = preprocessing.RobustScaler()
+                        robust_scaler = robust_scaler.fit(data.transpose(1, 0)) # [S, T] -> [T, S]
+                        print("[+] Scaler fitted.")
+
+                        info = {
+                            "subject": subject,
+                            "session": session,
+                            "subject_idx": int(subject) - 1,
+                            "task": task,
+                            "run": None,
+                            "dataset": "gwilliams2022",
+                            "sfreq": config["resample_freq"],
+                            "sensor_xyz": sensor_positions,
+                            "robust_scaler_center": robust_scaler.center_,
+                            "robust_scaler_scale": robust_scaler.scale_,
+                            "n_samples": data.shape[-1],
+                        }
+
+                        info["channel_means"] = np.mean(data, axis=1)
+                        info["channel_stds"] = np.std(data, axis=1)
+
+                        os.makedirs(f"{preproc_root}/{split}", exist_ok=True)
+                        with h5py.File(preproc_path, "w") as f:
+                            ds = f.create_dataset("data", data=data, dtype=np.float32, chunks=(data.shape[0], 40))
+                            for key, value in info.items():
+                                if value is None:
+                                    continue
+                                ds.attrs[key] = value
+                        
+                        print("Finished preprocessing.")
 
 
 def preprocess_camcan(config):
