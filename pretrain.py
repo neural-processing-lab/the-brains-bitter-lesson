@@ -38,6 +38,13 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
+    "--resume_ckpt",
+    type=str,
+    default=None,
+    help="Path to the checkpoint to resume from",
+)
+
+argparser.add_argument(
     "--seed",
     type=int,
     default=42,
@@ -180,7 +187,9 @@ trainer.fit(
     pretrainer,
     train_loader,
     val_loader,
+    ckpt_path=args.resume_ckpt,
 )
+
 pretrainer = pretrainer.load_from_checkpoint(
     checkpoint.best_model_path,
 )

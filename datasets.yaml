@@ -73,3 +73,10 @@ camcan:
   l_freq: 0.1
   h_freq: 125
   notch_freq: 50
+mous:
+  bids_root: "/data/engs-pnpl/datasets/schoffelen2019"
+  preproc_root: "/data/engs-pnpl/datasets/schoffelen2019/derivatives/bbl_preproc"
+  resample_freq: 250
+  l_freq: 0.1
+  h_freq: 125
+  notch_freq: 50

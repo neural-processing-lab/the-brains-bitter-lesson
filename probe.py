@@ -173,17 +173,17 @@ prober = Prober(
 )
 
 checkpoint = ModelCheckpoint(
-    monitor="val_loss",
+    monitor="val_auroc",
     dirpath="checkpoints",
-    filename=args.name + "-best-{epoch:02d}-{val_loss:.2f}",
+    filename=args.name + "-best-{epoch:02d}-{val_auroc:.2f}",
     save_top_k=1,
-    mode="min",
+    mode="max",
 )
 
 early_stopping = EarlyStopping(
     monitor="val_auroc",
     patience=10,
-    mode="min",
+    mode="max",
 )
 
 logger = WandbLogger(
@@ -193,7 +193,7 @@ logger = WandbLogger(
 )
 
 trainer_params = dict(
-    callbacks = [checkpoint],
+    callbacks = [checkpoint, early_stopping],
     logger = logger,
     accelerator = "auto",
     devices = 1,
