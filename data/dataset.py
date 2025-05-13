@@ -14,6 +14,11 @@ GET_SPEECH_EVENTS_FN = {
     "gwilliams2022": utils.get_gwilliams_speech_events,
 }
 
+GET_VOICING_EVENTS_FN = {
+    "armeni2022": utils.get_armeni_voicing_events,
+    "gwilliams2022": utils.get_gwilliams_voicing_events,
+}
+
 
 class PaddingCollator:
     def __init__(self, max_pad, padding_key="meg"):
@@ -64,8 +69,10 @@ class MEGDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         pass
 
-class SpeechDataset(MEGDataset):
-    def __init__(self, dataset_name, datasets_config, split, sample_duration=0.5, dataset_id=0, subject_id_increment=0):
+class ProbingDataset(MEGDataset):
+    def __init__(
+            self, dataset_name, datasets_config, split, data_task, sample_duration=0.5, dataset_id=0, subject_id_increment=0
+        ):
         super().__init__(dataset_name, datasets_config)
 
         self.sample_duration = sample_duration
@@ -85,7 +92,12 @@ class SpeechDataset(MEGDataset):
             task = info["task"]
             sfreq = info["sfreq"]
 
-            speech_events = GET_SPEECH_EVENTS_FN[dataset_name](
+            if data_task == "speech":
+                event_fn = GET_SPEECH_EVENTS_FN
+            elif data_task == "voicing":
+                event_fn = GET_VOICING_EVENTS_FN   
+
+            events = event_fn[dataset_name](
                 bids_root=self.config["bids_root"],
                 subject=subject,
                 session=session,
@@ -95,11 +107,11 @@ class SpeechDataset(MEGDataset):
                 recording_samples=info["n_samples"],
             )
         
-            for speech_event in speech_events:
+            for event in events:
                 self.samples.append({
                     "recording": preprocessed_recording,
-                    "onset": speech_event["onset"],
-                    "label": speech_event["label"],
+                    "onset": event["onset"],
+                    "label": event["label"],
                 })
 
     def __len__(self):
@@ -130,17 +142,6 @@ class SpeechDataset(MEGDataset):
             "label": label,
             "sfreq": sfreq,
         }
-
-# class VoicingDataset(MEGDataset):
-#     def __init__(self, data, labels):
-#         self.data = data
-#         self.labels = labels
-
-#     def __len__(self):
-#         return len(self.data)
-
-#     def __getitem__(self, idx):
-#         return self.data[idx], self.labels[idx]
 
 class PretrainingDataset(MEGDataset):
     def __init__(self, dataset_name, datasets_config, split, sample_duration=0.5, dataset_id=0, subject_id_increment=0):

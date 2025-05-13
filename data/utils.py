@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 
+ARPABET_UNVOICED = ["P", "T", "K", "CH", "F", "TH", "S", "SH", "HH"]
+TIMIT_UNVOICED = ["bcl", "ch", "dcl", "f", "gcl", "hh", "k", "kcl", "p", "pcl", "q", "s", "sh", "t", "tcl"]
+
 def scale_meg(meg_data, robust_scaler_center, robust_scaler_scale, sfreq, threshold=5):
     # Scale and center the data such that [-1, 1] is in IQR [0.25, 0.75]
     meg_data -= robust_scaler_center[:, None]
@@ -95,5 +98,62 @@ def get_gwilliams_speech_events(bids_root, subject, session, task, sample_freq, 
                 "onset": i,
                 "label": 0,
             })
+    
+    return samples[:-1]  # Remove the last sample as it is usually not a complete frame
+
+def get_armeni_voicing_events(bids_root, subject, session, task, sample_freq, duration, recording_samples):
+    events_df = get_armeni_events(bids_root, subject, session, task)
+
+    # Find all gaps between words
+    voicing_events = events_df[events_df["type"].str.contains("phoneme_onset")]
+
+    samples = []
+    for _, event in voicing_events.iterrows():
+        # Decision rule: if event is an "sp" mark it explicitly as silence
+        onset = float(event["onset"])
+        t_start = (
+            int(onset * sample_freq)
+        )  # Delay labels so they occur at same time as brain response
+
+        phoneme : str = event["value"][:2]
+        if phoneme[-1].isnumeric():
+            phoneme = phoneme[:-1]
+        
+        if phoneme == "sp":
+            continue
+
+        voicing = 1 if phoneme not in ARPABET_UNVOICED else 0
+
+        samples.append({
+            "onset": t_start,
+            "label": voicing,
+        })
+    
+    return samples
+
+def get_gwilliams_voicing_events(bids_root, subject, session, task, sample_freq, duration, recording_samples):
+    events_df = get_gwilliams_events(bids_root, subject, session, task)
+
+    # Find all gaps between words
+    voicing_events = events_df[
+        ["'kind': 'phoneme'" in trial_type for trial_type in list(events_df["trial_type"])]
+    ]
+
+    samples = []
+    for _, event in voicing_events.iterrows():
+        # Decision rule: if event is an "sp" mark it explicitly as silence
+        onset = float(event["onset"])
+        t_start = (
+            int(onset * sample_freq)
+        )  # Delay labels so they occur at same time as brain response
+
+        phoneme : str = event["trial_type"].split("'phoneme': '")[1].split("'")[0].split("_")[0]
+
+        voicing = 1 if phoneme not in TIMIT_UNVOICED else 0
+
+        samples.append({
+            "onset": t_start,
+            "label": voicing,
+        })
     
     return samples

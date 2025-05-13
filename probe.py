@@ -7,7 +7,7 @@ import torch
 
 import constants
 
-from data.dataset import SpeechDataset, PaddingCollator
+from data.dataset import ProbingDataset, PaddingCollator
 from models.prober import Prober
 from models.pretrainer import Pretrainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
@@ -98,35 +98,33 @@ print("Incrementing dataset ids by this much in probing.")
 
 # Load datasets
 
-if args.task == "speech":
-    dataset_cls = SpeechDataset
-elif args.task == "voicing":
-    raise NotImplementedError("Voicing task not implemented yet.")
-
 train_sets, val_sets, test_sets = [], [], []
 for i, dataset_name in enumerate(args.datasets):
     if dataset_name not in datasets_config:
         raise ValueError(f"Dataset {dataset_name} not found in config file.")
         
-    train_sets.append(dataset_cls(
+    train_sets.append(ProbingDataset(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
         split="train",
         dataset_id=i + n_pretrained_datasets,
+        data_task=args.task,
     ))
 
-    val_sets.append(dataset_cls(
+    val_sets.append(ProbingDataset(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
         split="val",
         dataset_id=i + n_pretrained_datasets,
+        data_task=args.task,
     ))
 
-    test_sets.append(dataset_cls(
+    test_sets.append(ProbingDataset(
         dataset_name=dataset_name,
         datasets_config=datasets_config,
         split="test",
         dataset_id=i + n_pretrained_datasets,
+        data_task=args.task,
     ))
 
 train_sets = torch.utils.data.ConcatDataset(train_sets)
