@@ -1,0 +1,12 @@
+einops
+h5py
+lightning
+numpy
+pandas
+mne
+mne_bids
+scikit-learn
+torch
+torchaudio
+torchmetrics
+wandb
