@@ -18,10 +18,18 @@ This repository contains the code for "The Brain's Bitter Lesson: Scaling Speech
 3. Modify `datasets.yaml` to point `bids_root` to your dataset's root directory, and change `preproc_root` accordingly.
 
 ## Pre-training a model
-Run `python pretrain.py --datasets camcan` to pretrain a model on the CamCAN dataset. A checkpoint will be saved in `checkpoints/`
+→ `pretrain.py`
+
+e.g. run `python pretrain.py --datasets camcan mous` to pretrain a model on the CamCAN and MOUS datasets together. A checkpoint will be saved in `checkpoints/`
 
 ## Probing a pre-trained model
-Run `python probe.py --task speech --pretrained_ckpt checkpoints/<>.ckpt --datasets armeni2022` to probe a pretrained model for speech detection on the Armeni dataset.
+→ `probe.py`
+
+e.g. run `python probe.py --task speech --pretrained_ckpt checkpoints/<>.ckpt --datasets armeni2022` to probe a pretrained model for speech detection on the Armeni dataset.
 
 ## Pre-trained checkpoints
-We provide checkpoints pretrained on CamCAN in `checkpoints/`.
+We provide checkpoints for models pretrained with CamCAN in `checkpoints/`.
+
+# TODO
+- [ ] Provide code examples for novel subject generalisation experiments
+- [ ] Provide code examples for scaling experiments
