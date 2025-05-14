@@ -214,7 +214,7 @@ trainer.fit(
     train_loader,
     val_loader,
 )
-prober = prober.load_from_checkpoint(
+prober = Prober.load_from_checkpoint(
     checkpoint.best_model_path,
 )
 trainer.test(prober, test_loader)
