@@ -16,7 +16,7 @@ armeni2022:
           - "005"
           - "006"
           - "007"
-          - 0"08
+          - "008"
         task: compr
       - subject: "002"
         sessions: 
