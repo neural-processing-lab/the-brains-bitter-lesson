@@ -9,7 +9,7 @@ import constants
 
 from data.dataset import PretrainingDataset, PaddingCollator
 from models.pretrainer import Pretrainer
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import WandbLogger
 
 torch.set_float32_matmul_precision('high')
@@ -158,6 +158,12 @@ checkpoint = ModelCheckpoint(
     mode="min",
 )
 
+early_stopping = EarlyStopping(
+    monitor="val_loss",
+    patience=7,
+    mode="min",
+)
+
 logger = WandbLogger(
     name=args.name,
     project="the-brains-bitter-lesson",
@@ -165,7 +171,7 @@ logger = WandbLogger(
 )
 
 trainer_params = dict(
-    callbacks = [checkpoint],
+    callbacks = [checkpoint, early_stopping],
     logger = logger,
     accelerator = "auto",
     devices = 1,
