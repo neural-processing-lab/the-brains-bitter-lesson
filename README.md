@@ -3,7 +3,7 @@ This repository contains the code for "The Brain's Bitter Lesson: Scaling Speech
 ```
 @inproceedings{jayalath2024brain,
   title={{The Brain's Bitter Lesson: Scaling Speech Decoding With Self-Supervised Learning}},
-  author={Jayalath, Dulhan and Landau, Gilad and Shillingford, Brendan and Woolrich, Mark and Jones, Oiwi Parker},
+  author={Jayalath, Dulhan and Landau, Gilad and Shillingford, Brendan and Woolrich, Mark and Parker Jones, Oiwi},
   booktitle={Forty-second International Conference on Machine Learning, {ICML} 2025, Vancouver, Canada, July 13-19, 2025},
   year={2025},
   organization={PMLR}
