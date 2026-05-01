@@ -1,7 +1,7 @@
 # The Brain's Bitter Lesson (BBL)
 This repository contains the code for "The Brain's Bitter Lesson: Scaling Speech Decoding With Self-Supervised Learning", published at ICML 2025. Find the paper on ArXiv [here](https://arxiv.org/abs/2406.04328). If you find this code helpful in your work, please cite the paper:
 ```
-@inproceedings{jayalath2024brain,
+@inproceedings{jayalath2025bbl,
   title={{The Brain's Bitter Lesson: Scaling Speech Decoding With Self-Supervised Learning}},
   author={Jayalath, Dulhan and Landau, Gilad and Shillingford, Brendan and Woolrich, Mark and Parker Jones, Oiwi},
   booktitle={Forty-second International Conference on Machine Learning, {ICML} 2025, Vancouver, Canada, July 13-19, 2025},
