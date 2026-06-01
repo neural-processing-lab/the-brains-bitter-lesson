@@ -28,7 +28,7 @@ e.g. run `python pretrain.py --datasets camcan mous` to pretrain a model on the 
 e.g. run `python probe.py --task speech --pretrained_ckpt checkpoints/<>.ckpt --datasets armeni2022` to probe a pretrained model for speech detection on the Armeni dataset.
 
 ## Pre-trained checkpoints
-We provide checkpoints for models pretrained with CamCAN in `checkpoints/`.
+You can download a checkpoint pretrained with CamCAN from [GDrive](https://drive.google.com/file/d/1cYdKDYoIupjoMfq5cEWgB-W74XhztWEw/view?usp=sharing).
 
 # TODO
 - [ ] Provide code examples for novel subject generalisation experiments
